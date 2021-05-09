@@ -16,6 +16,7 @@
 #include "example.h"
 #include "vector.hh"
 #include "matrix.hh"
+#include "rectangle.hh"
 #include "../include/lacze_do_gnuplota.hh"
 
 /*!
@@ -73,6 +74,30 @@ void PrzykladZapisuWspolrzednychDoStrumienia( std::ostream&     StrmWy,
                              // aby gnuplot narysowal zamkniętą linię.
 }
 
+void zapiswspldostru(std::ostream& out, Rectangle S)
+{
+       Vector v = S[0];
+       out << S;
+       out << std::setw(16) << std::fixed << std::setprecision(10) << v[0]
+              << std::setw(16) << std::fixed << std::setprecision(10) << v[1] << std::endl;
+}
+
+bool ZapisWspolrzednychDoPliku( const char  *sNazwaPliku, Rectangle S)
+{
+  std::ofstream  StrmPlikowy;
+
+  StrmPlikowy.open(sNazwaPliku);
+  if (!StrmPlikowy.is_open())  {
+    std::cerr << ":(  Operacja otwarcia do zapisu \"" << sNazwaPliku << "\"" << std::endl
+	 << ":(  nie powiodla sie." << std::endl;
+    return false;
+  }
+
+  zapiswspldostru(StrmPlikowy, S);
+
+  StrmPlikowy.close();
+  return !StrmPlikowy.fail();
+}
 
 
 /*!
@@ -106,7 +131,11 @@ bool PrzykladZapisuWspolrzednychDoPliku( const char  *sNazwaPliku,
   return !StrmPlikowy.fail();
 }
 
-int main() {
+int main() 
+{ 
+  Vector a(0, 100), b(0, 160), c(120, 160), d(120, 100);
+  Rectangle PRO(a, b, c, d);
+  
   std::cout << "Project Rotation 2D based on C++ Boiler Plate v"
             << PROJECT_VERSION_MAJOR /*duże zmiany, najczęściej brak kompatybilności wstecz */
             << "."
@@ -139,7 +168,7 @@ int main() {
    //  Wspolrzedne wierzcholkow beda zapisywane w pliku "prostokat.dat"
    //  Ponizsze metody powoduja, ze dane z pliku beda wizualizowane
    //  na dwa sposoby:
-   //   1. Rysowane jako linia ciagl o grubosci 2 piksele
+   //   1. Rysowane jako linia ciagla o grubosci dwoch pikseli
    //
   Lacze.DodajNazwePliku("../datasets/prostokat.dat",PzG::RR_Ciagly,2);
    //
@@ -154,7 +183,72 @@ int main() {
    //
   Lacze.ZmienTrybRys(PzG::TR_2D);
 
-  PrzykladZapisuWspolrzednychDoStrumienia(std::cout,0);
+
+  if(!ZapisWspolrzednychDoPliku("../datasets/prostokat.dat", PRO)) return 1;
+  Lacze.Rysuj();
+  std::cout << "Nacisnij ENTER aby kontynuowac" << std::endl;
+  std::cin.ignore(10000, '\n');
+
+  PRO.sides(PRO);
+  std::cout << "o - obrot prostokata o zadany kat" << std::endl;
+  std::cout << "p - przesuniecie prostokata o zadany wektor" << std::endl;
+  std::cout << "w - wyswietlenie wspolrzednych wierzcholkow" << std::endl;
+  std::cout << "m - wyswietl menu" << std::endl;
+  std::cout << "k - koniec dzialania programu" << std::endl;
+  do
+  {
+    char op;
+    std::cin >> op;
+    switch (op)
+    {
+    case 'o':{
+      std::cout << "Twoj wybor? (m - menu) > o" << std::endl << "Podaj wartosc kata obrotu w stopniach" << std::endl;
+      double degr;
+      std::cin >> degr;
+      std::cout << std::endl << "Ile razy operacja obrotu ma byc powtorzona?" << std::endl;
+      int re;
+      std::cin >> re; std::cout << std::endl;
+      PRO = PRO.rotation(PRO, degr, re);
+      PRO.sides(PRO);
+
+      if(!ZapisWspolrzednychDoPliku("../datasets/prostokat.dat", PRO)) return 1;
+      Lacze.Rysuj();
+      std::cout << "Nacisnij ENTER aby kontynuowac" << std::endl;
+      std::cin.ignore(10000, '\n');
+      break;}
+    case 'p':{
+      std::cout << "Twoj wybor? (m - menu) > p" << std::endl 
+      << "Wprowadz wspolrzedne wektora translacji w postaci dwoch liczbtzn. wspolrzednej x oraz wspolrzednej y." << std::endl;
+      double tmp[SIZE];
+      std::cin >> tmp[0]; std::cin >> tmp[1]; std::cout << std::endl;
+      Vector V(tmp);
+      PRO = PRO.translation(PRO, V);
+      if(!ZapisWspolrzednychDoPliku("../datasets/prostokat.dat", PRO)) return 1;
+      Lacze.Rysuj();
+      std::cout << "Nacisnij ENTER aby kontynuowac" << std::endl;
+      std::cin.ignore(10000, '\n');
+      break;}
+    case 'w':{
+      std::cout << "Twoj wybor? (m - menu) > w" << std::endl;
+      std::cout << PRO;
+      break;}
+    case 'm':{
+      std::cout << "o - obrot prostokata o zadany kat" << std::endl;
+      std::cout << "p - przesuniecie prostokata o zadany wektor" << std::endl;
+      std::cout << "w - wyswietlenie wspolrzednych wierzcholkow" << std::endl;
+      std::cout << "m - wyswietl menu" << std::endl;
+      std::cout << "k - koniec dzialania programu" << std::endl;
+      break;}
+    case 'k':{
+      return 0;
+      break;}
+    default:{
+      break;}
+    }
+  }while(1);
+
+  
+  /*PrzykladZapisuWspolrzednychDoStrumienia(std::cout,0);
   if (!PrzykladZapisuWspolrzednychDoPliku("../datasets/prostokat.dat",0)) return 1;
   Lacze.Rysuj(); // <- Tutaj gnuplot rysuje, to co zapisaliśmy do pliku
   std::cout << "Naciśnij ENTER, aby kontynuowac" << std::endl;
@@ -166,11 +260,12 @@ int main() {
   if (!PrzykladZapisuWspolrzednychDoPliku("../datasets/prostokat.dat",50)) return 1;
   Lacze.Rysuj(); // <- Tutaj gnuplot rysuje, to co zapisaliśmy do pliku
   std::cout << "Naciśnij ENTER, aby kontynuowac" << std::endl;
-  std::cin.ignore(100000,'\n');
+  std::cin.ignore(100000,'\n');*/
 
   // Z bazy projektu-wydmuszki Boiler Plate C++:
   // Bring in the dummy class from the example source,
   // just to show that it is accessible from main.cpp.
-  Dummy d = Dummy();
-  return d.doSomething() ? 0 : -1;
+
+  /*Dummy d = Dummy();
+  return d.doSomething() ? 0 : -1;*/
 }
